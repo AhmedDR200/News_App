@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import ArticleSerializer
+from django.http import Http404
 from .models import Article
 
 
@@ -86,3 +87,74 @@ def single_article(request, id):
 
 
 
+class ArticleListCreate(APIView):
+    def get(self, request):
+        articles = Article.objects.all()
+        serializer = ArticleSerializer(articles, many=True)
+        return Response({
+            'status': 'success',
+            'message': 'articles retrieved successfully',
+            'articles': serializer.data
+            }, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = ArticleSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'status': 'success',
+                'message': 'article created successfully',
+                'article': serializer.data
+                }, status=status.HTTP_201_CREATED)
+        return Response({
+            'status': 'error',
+            'message': 'article creation failed',
+            'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class ArticleDetail(APIView):
+    def get(self, request, pk):
+        try:
+            article = Article.objects.get(pk=pk)
+            serializer = ArticleSerializer(article)
+            return Response({
+                'status': 'success',
+                'message': 'Article retrieved successfully',
+                'article': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Article.DoesNotExist:
+            raise Http404("Article does not exist")
+
+    def put(self, request, pk):
+        try:
+            article = Article.objects.get(pk=pk)
+        except Article.DoesNotExist:
+            raise Http404("Article does not exist")
+
+        serializer = ArticleSerializer(article, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'status': 'success',
+                'message': 'Article updated successfully',
+                'article': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'error',
+            'message': 'Article update failed',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            article = Article.objects.get(pk=pk)
+        except Article.DoesNotExist:
+            raise Http404("Article does not exist")
+
+        article.delete()
+        return Response({
+            'status': 'success',
+            'message': 'Article deleted successfully',
+        }, status=status.HTTP_200_OK)
