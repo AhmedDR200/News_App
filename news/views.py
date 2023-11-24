@@ -2,9 +2,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import ArticleSerializer
+from .serializers import ArticleSerializer, JournalistSerializer
 from django.http import Http404
-from .models import Article
+from .models import Article, Journalist
 
 
 @api_view(['GET'])
@@ -114,6 +114,50 @@ class ArticleListCreate(APIView):
 
 
 
+
+@api_view(['GET'])
+def get_all_journalists(request):
+    journalist = Journalist.objects.all()
+    if not journalist:
+        return Response({
+            'status': 'error',
+            'message': 'No journalist found',
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = JournalistSerializer(journalist, many=True)
+    return Response({
+        'status': 'success',
+        'message': 'journalists retrieved successfully',
+        'count': len(serializer.data),
+        'journalists': serializer.data
+    },status=status.HTTP_200_OK)
+
+
+
+@api_view(['POST'])
+def create_journalist(request):
+    # serializer = JournalistSerializer(data=request.POST)
+    # If you're expecting JSON data, you can use the following instead:
+    serializer = JournalistSerializer(data=request.data)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'status': 'success',
+            'message': 'Journalist created successfully',
+            'journalist': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'status': 'error',
+        'message': 'Journalist creation failed',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+# ========================================================
 class ArticleDetail(APIView):
     def get(self, request, pk):
         try:
